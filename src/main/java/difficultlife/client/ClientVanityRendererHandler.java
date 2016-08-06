@@ -1,33 +1,22 @@
 package difficultLife.client;
 
+import difficultLife.utils.InventoryVanityArmor;
+import net.minecraftforge.client.event.RenderPlayerEvent.SetArmorModel;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+
 import java.util.Hashtable;
 
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import org.lwjgl.opengl.GL11;
-
-import difficultLife.utils.DLSaveStorage;
-import difficultLife.utils.InventoryVanityArmor;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.ModelBiped;
-import net.minecraft.client.renderer.entity.RenderBiped;
-import net.minecraft.client.renderer.entity.RenderManager;
-import net.minecraft.client.renderer.entity.RenderPlayer;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemArmor;
-import net.minecraft.item.ItemStack;
-import net.minecraftforge.client.event.RenderPlayerEvent.SetArmorModel;
-
 public class ClientVanityRendererHandler {
-	
-	public Hashtable<String,InventoryVanityArmor> playersInventory = new Hashtable<String, InventoryVanityArmor>();
-	public InventoryVanityArmor vanityInventory;
-	public int aort;
-	
-	
-	
-	@SubscribeEvent
-	public void renderPlayerModel(SetArmorModel event)
-	{
+
+    public Hashtable<String, InventoryVanityArmor> playersInventory = new Hashtable<String, InventoryVanityArmor>();
+    public InventoryVanityArmor vanityInventory;
+    public int aort;
+
+
+    @SubscribeEvent
+    public void renderPlayerModel(SetArmorModel event) {
+        //TODO: Fix vanity shiz
+        /*
 		if(event.getEntityPlayer() == Minecraft.getMinecraft().thePlayer)
 		{
 			if(vanityInventory == null)
@@ -53,7 +42,8 @@ public class ClientVanityRendererHandler {
 	            {
 	            	event.setResult(0);
 	            	ItemArmor itemarmor = (ItemArmor)item;
-	            	Minecraft.getMinecraft().renderEngine.bindTexture(RenderBiped.getArmorResource(event.entityPlayer, stk, slot, null));
+					Minecraft.getMinecraft().renderEngine.bindTexture(ForgeHooksClient.getArmorTexture(event.getEntityPlayer(), itemarmor, ));
+//	            	Minecraft.getMinecraft().renderEngine.bindTexture(RenderBiped.getArmorResource(event.entityPlayer, stk, slot, null));
 	            	RenderPlayer rp = (RenderPlayer) RenderManager.instance.getEntityRenderObject(Minecraft.getMinecraft().thePlayer);
 	                ModelBiped modelbiped = slot == 2 ? rp.modelArmor : rp.modelArmorChestplate;
 	                modelbiped.bipedHead.showModel = slot == 0;
@@ -181,6 +171,7 @@ public class ClientVanityRendererHandler {
 	            event.result = 0;
 			}
 		}
-	}
+		*/
+    }
 
 }
