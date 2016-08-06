@@ -2,9 +2,9 @@ package difficultLife.client;
 
 import java.util.Hashtable;
 
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import difficultLife.utils.DLSaveStorage;
 import difficultLife.utils.InventoryVanityArmor;
 import net.minecraft.client.Minecraft;
@@ -28,21 +28,21 @@ public class ClientVanityRendererHandler {
 	@SubscribeEvent
 	public void renderPlayerModel(SetArmorModel event)
 	{
-		if(event.entityPlayer == Minecraft.getMinecraft().thePlayer)
+		if(event.getEntityPlayer() == Minecraft.getMinecraft().thePlayer)
 		{
 			if(vanityInventory == null)
 			{
-				vanityInventory = new InventoryVanityArmor(event.entityPlayer);
+				vanityInventory = new InventoryVanityArmor(event.getEntityPlayer());
 				vanityInventory.readFromNBT(DLSaveStorage.clientPlayerData);
 			}
-			if(event.entityPlayer.ticksExisted % 100 == 0)
+			if(event.getEntityPlayer().ticksExisted % 100 == 0)
 			{
 				vanityInventory.readFromNBT(DLSaveStorage.clientPlayerData);
 			}
 			
 			
 			
-			int slot = 3-event.slot;
+			int slot = 3-event.getSlot();
 			ItemStack stk = vanityInventory.getStackInSlot(slot);
 			
 			if(stk != null)
@@ -51,7 +51,7 @@ public class ClientVanityRendererHandler {
 
 	            if (item instanceof ItemArmor)
 	            {
-	            	event.result = 0;
+	            	event.setResult(0);
 	            	ItemArmor itemarmor = (ItemArmor)item;
 	            	Minecraft.getMinecraft().renderEngine.bindTexture(RenderBiped.getArmorResource(event.entityPlayer, stk, slot, null));
 	            	RenderPlayer rp = (RenderPlayer) RenderManager.instance.getEntityRenderObject(Minecraft.getMinecraft().thePlayer);

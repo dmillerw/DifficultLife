@@ -1,16 +1,17 @@
 package difficultLife.client;
 
+import net.minecraft.client.renderer.VertexBuffer;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.util.math.MathHelper;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.StatCollector;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import difficultLife.DLCore;
 import difficultLife.init.DLConfigSetup;
 import difficultLife.utils.DLSaveStorage;
@@ -23,9 +24,9 @@ public class ClientDisplayManagement {
 	@SubscribeEvent
 	public void renderTick(RenderGameOverlayEvent.Post event)
 	{
-		if(Minecraft.getMinecraft().theWorld != null && event.type == ElementType.ALL)
+		if(Minecraft.getMinecraft().theWorld != null && event.getType() == ElementType.ALL)
 		{
-			ScaledResolution res = event.resolution;
+			ScaledResolution res = event.getResolution();
 	        int width = res.getScaledWidth();
 	        int height = res.getScaledHeight();
 			GL11.glPushMatrix();
@@ -71,22 +72,26 @@ public class ClientDisplayManagement {
 	        	
 	        	float s = 0.5F;
 	        	GL11.glScalef(s, s, s);
-	        	Minecraft.getMinecraft().fontRenderer.drawString(StatCollector.translateToLocal(str), (int)((left-str.length()*2.5F + 8)/s), (int)((top+64)/s)+1, 0xffffff);
+			    //TODO - dmillerw: fix localization
+//	        	Minecraft.getMinecraft().fontRendererObj.drawString(StatCollector.translateToLocal(str), (int)((left-str.length()*2.5F + 8)/s), (int)((top+64)/s)+1, 0xffffff);
 	        	
 			GL11.glPopMatrix();
 		}
 	}
-	
-    public void drawTexturedModalRect(int p_73729_1_, int p_73729_2_, int p_73729_3_, int p_73729_4_, int p_73729_5_, int p_73729_6_)
+
+    // I've found this in like, 3 different places now
+    //TODO - dmillerw: UTILITIY CLASS PLZ
+    public void drawTexturedModalRect(int x, int y, int textureX, int textureY, int width, int height)
     {
         float f = 0.00390625F;
         float f1 = 0.00390625F;
-        Tessellator tessellator = Tessellator.instance;
-        tessellator.startDrawingQuads();
-        tessellator.addVertexWithUV((double)(p_73729_1_ + 0), (double)(p_73729_2_ + p_73729_6_), (double)this.zLevel, (double)((float)(p_73729_3_ + 0) * f), (double)((float)(p_73729_4_ + p_73729_6_) * f1));
-        tessellator.addVertexWithUV((double)(p_73729_1_ + p_73729_5_), (double)(p_73729_2_ + p_73729_6_), (double)this.zLevel, (double)((float)(p_73729_3_ + p_73729_5_) * f), (double)((float)(p_73729_4_ + p_73729_6_) * f1));
-        tessellator.addVertexWithUV((double)(p_73729_1_ + p_73729_5_), (double)(p_73729_2_ + 0), (double)this.zLevel, (double)((float)(p_73729_3_ + p_73729_5_) * f), (double)((float)(p_73729_4_ + 0) * f1));
-        tessellator.addVertexWithUV((double)(p_73729_1_ + 0), (double)(p_73729_2_ + 0), (double)this.zLevel, (double)((float)(p_73729_3_ + 0) * f), (double)((float)(p_73729_4_ + 0) * f1));
+        Tessellator tessellator = Tessellator.getInstance();
+        VertexBuffer vertexbuffer = tessellator.getBuffer();
+        vertexbuffer.begin(7, DefaultVertexFormats.POSITION_TEX);
+        vertexbuffer.pos((double)(x + 0), (double)(y + height), (double)this.zLevel).tex((double)((float)(textureX + 0) * 0.00390625F), (double)((float)(textureY + height) * 0.00390625F)).endVertex();
+        vertexbuffer.pos((double)(x + width), (double)(y + height), (double)this.zLevel).tex((double)((float)(textureX + width) * 0.00390625F), (double)((float)(textureY + height) * 0.00390625F)).endVertex();
+        vertexbuffer.pos((double)(x + width), (double)(y + 0), (double)this.zLevel).tex((double)((float)(textureX + width) * 0.00390625F), (double)((float)(textureY + 0) * 0.00390625F)).endVertex();
+        vertexbuffer.pos((double)(x + 0), (double)(y + 0), (double)this.zLevel).tex((double)((float)(textureX + 0) * 0.00390625F), (double)((float)(textureY + 0) * 0.00390625F)).endVertex();
         tessellator.draw();
     }
 

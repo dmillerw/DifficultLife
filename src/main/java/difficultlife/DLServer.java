@@ -2,10 +2,10 @@ package difficultLife;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
-import cpw.mods.fml.common.network.IGuiHandler;
 import difficultLife.utils.ContainerVanityArmor;
+import net.minecraftforge.fml.common.network.IGuiHandler;
 
-public class DLServer implements IGuiHandler{
+public class DLServer implements IGuiHandler {
 	
 	public void clientInfo()
 	{

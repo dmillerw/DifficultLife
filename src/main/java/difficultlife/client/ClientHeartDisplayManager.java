@@ -2,9 +2,15 @@ package difficultLife.client;
 
 import java.util.Random;
 
+import net.minecraft.client.renderer.VertexBuffer;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.init.MobEffects;
+import net.minecraft.init.PotionTypes;
+import net.minecraft.potion.PotionType;
+import net.minecraft.util.math.MathHelper;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
@@ -13,7 +19,6 @@ import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.IAttributeInstance;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
-import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.GuiIngameForge;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
@@ -54,11 +59,11 @@ public class ClientHeartDisplayManager {
 	@SubscribeEvent
 	public void renderHealthbar(RenderGameOverlayEvent.Pre event)
 	{
-		if (event.type == ElementType.HEALTH) 
+		if (event.getType() == ElementType.HEALTH)
 		{
 			updateCounter++;
 			Minecraft mc = Minecraft.getMinecraft();
-			ScaledResolution scaledresolution = new ScaledResolution(mc,mc.displayWidth, mc.displayHeight);
+			ScaledResolution scaledresolution = new ScaledResolution(mc);
 			int scaledWidth = scaledresolution.getScaledWidth();
 			int scaledHeight = scaledresolution.getScaledHeight();
 			int xBasePos = scaledWidth / 2 - 91;
@@ -70,9 +75,11 @@ public class ClientHeartDisplayManager {
 			{
 				highlight = false;
 			}
-			IAttributeInstance attrMaxHealth = mc.thePlayer.getEntityAttribute(SharedMonsterAttributes.maxHealth);
+			IAttributeInstance attrMaxHealth = mc.thePlayer.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH);
 			int health = MathHelper.ceiling_float_int(mc.thePlayer.getHealth());
-			int healthLast = MathHelper.ceiling_float_int(mc.thePlayer.prevHealth);
+			int healthLast = health;
+			//TODO - dmillerw: heatlh last?
+//			int healthLast = MathHelper.ceiling_float_int(mc.thePlayer.prevHealth);
 			float healthMax = (float) attrMaxHealth.getAttributeValue();
 			if (healthMax > 20)
 				healthMax = 20;
@@ -90,7 +97,7 @@ public class ClientHeartDisplayManager {
 				yBasePos += 7;
 			}
 			int regen = -1;
-			if (mc.thePlayer.isPotionActive(Potion.regeneration)) 
+			if (mc.thePlayer.isPotionActive(Potion.REGISTRY.getObject(PotionTypes.REGENERATION.getRegistryName())))
 			{
 				regen = updateCounter % 25;
 			}
@@ -99,9 +106,9 @@ public class ClientHeartDisplayManager {
 			final int TOP = 9 * (mc.theWorld.getWorldInfo().isHardcoreModeEnabled() ? 5 : 0);
 			final int BACKGROUND = (highlight ? 25 : 16);
 			int MARGIN = 16;
-			if (mc.thePlayer.isPotionActive(Potion.poison))
+			if (mc.thePlayer.isPotionActive(Potion.REGISTRY.getObject(PotionTypes.POISON.getRegistryName())))
 				MARGIN += 36;
-			else if (mc.thePlayer.isPotionActive(Potion.wither))
+			else if (mc.thePlayer.isPotionActive(MobEffects.WITHER))
 				MARGIN += 72;
 
 			for (int i = MathHelper.ceiling_float_int((healthMax + absorb) / 2.0F) - 1;
@@ -141,10 +148,10 @@ public class ClientHeartDisplayManager {
 			}
 			
 			int potionOffset = 0;
-			PotionEffect potion = mc.thePlayer.getActivePotionEffect(Potion.wither);
+			PotionEffect potion = mc.thePlayer.getActivePotionEffect(MobEffects.WITHER);
 			if (potion != null)
 				potionOffset = 18;
-			potion = mc.thePlayer.getActivePotionEffect(Potion.poison);
+			potion = mc.thePlayer.getActivePotionEffect(Potion.REGISTRY.getObject(PotionTypes.POISON.getRegistryName()));
 			if (potion != null)
 				potionOffset = 9;
 			if (mc.theWorld.getWorldInfo().isHardcoreModeEnabled())
@@ -170,7 +177,7 @@ public class ClientHeartDisplayManager {
 				}
 			}
 
-			FontRenderer renderer = mc.fontRenderer;
+			FontRenderer renderer = mc.fontRendererObj;
 			String renderedString = health +"/" + MathHelper.ceiling_double_int(attrMaxHealth.getAttributeValue());
 			GL11.glPushMatrix();
 				float scale = 0.5F;
@@ -195,25 +202,20 @@ public class ClientHeartDisplayManager {
 			return colors[rowNumber];
 	}
 
-	public void drawTexturedModalRect(int par1, int par2, int par3, int par4, int par5, int par6, int color) {
-		float f = 0.00390625F;
-		float f1 = 0.00390625F;
-		Tessellator tessellator = Tessellator.instance;
-		tessellator.startDrawingQuads();
-		tessellator.setColorOpaque_I(color);
-		tessellator
-				.addVertexWithUV((double) (par1 + 0), (double) (par2 + par6), (double) this.zLevel,
-						(double) ((float) (par3 + 0) * f), (double) ((float) (par4 + par6) * f1));
-		tessellator.addVertexWithUV((double) (par1 + par5), (double) (par2 + par6),
-				(double) this.zLevel, (double) ((float) (par3 + par5) * f),
-				(double) ((float) (par4 + par6) * f1));
-		tessellator
-				.addVertexWithUV((double) (par1 + par5), (double) (par2 + 0), (double) this.zLevel,
-						(double) ((float) (par3 + par5) * f), (double) ((float) (par4 + 0) * f1));
-		tessellator.addVertexWithUV((double) (par1 + 0), (double) (par2 + 0), (double) this.zLevel,
-				(double) ((float) (par3 + 0) * f), (double) ((float) (par4 + 0) * f1));
-		tessellator.draw();
-	}
+    public void drawTexturedModalRect(int x, int y, int textureX, int textureY, int width, int height, int color)
+    {
+        float f = 0.00390625F;
+        float f1 = 0.00390625F;
+        Tessellator tessellator = Tessellator.getInstance();
+        VertexBuffer vertexbuffer = tessellator.getBuffer();
+        vertexbuffer.putColor4(color);
+        vertexbuffer.begin(7, DefaultVertexFormats.POSITION_TEX);
+        vertexbuffer.pos((double)(x + 0), (double)(y + height), (double)this.zLevel).tex((double)((float)(textureX + 0) * 0.00390625F), (double)((float)(textureY + height) * 0.00390625F)).endVertex();
+        vertexbuffer.pos((double)(x + width), (double)(y + height), (double)this.zLevel).tex((double)((float)(textureX + width) * 0.00390625F), (double)((float)(textureY + height) * 0.00390625F)).endVertex();
+        vertexbuffer.pos((double)(x + width), (double)(y + 0), (double)this.zLevel).tex((double)((float)(textureX + width) * 0.00390625F), (double)((float)(textureY + 0) * 0.00390625F)).endVertex();
+        vertexbuffer.pos((double)(x + 0), (double)(y + 0), (double)this.zLevel).tex((double)((float)(textureX + 0) * 0.00390625F), (double)((float)(textureY + 0) * 0.00390625F)).endVertex();
+        tessellator.draw();
+    }
 	
 	double zLevel = 0;
 }

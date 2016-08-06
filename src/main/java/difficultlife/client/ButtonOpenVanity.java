@@ -18,11 +18,11 @@ public class ButtonOpenVanity extends GuiButton
     {
         if(visible)
         {
-            FontRenderer fontrenderer = mc.fontRenderer;
+            FontRenderer fontrenderer = mc.fontRendererObj;
             mc.getTextureManager().bindTexture(GuiVanityArmor.background);
             GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-            field_146123_n = xx >= xPosition && yy >= yPosition && xx < xPosition + width && yy < yPosition + height;
-            int k = getHoverState(field_146123_n);
+            hovered = xx >= xPosition && yy >= yPosition && xx < xPosition + width && yy < yPosition + height;
+            int k = getHoverState(hovered);
             GL11.glEnable(3042);
             OpenGlHelper.glBlendFunc(770, 771, 1, 0);
             GL11.glBlendFunc(770, 771);
