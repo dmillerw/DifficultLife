@@ -1,11 +1,11 @@
 package difficultLife.network;
 
-import cpw.mods.fml.common.FMLLog;
 import difficultLife.DLCore;
 import difficultLife.init.DLConfigSetup;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.fml.common.FMLLog;
 import org.apache.logging.log4j.Level;
 
 import java.util.Hashtable;
@@ -17,7 +17,7 @@ public class DataSyncManager {
     public static void requestGuiOpenPacket(EntityPlayer player, int id) {
         if (player.worldObj.isRemote) {
             NBTTagCompound tag = new NBTTagCompound();
-            tag.setString("username", player.getCommandSenderName());
+            tag.setString("username", player.getDisplayNameString());
             tag.setInteger("guiid", id);
             DLCore.networkManager.sendToServer(new DLPacket().setID("guiRequest").setNBT(tag));
         } else {
@@ -27,13 +27,13 @@ public class DataSyncManager {
 
     public static void requestServerToClientMessage(String messageID, EntityPlayerMP client, NBTTagCompound message, boolean requirePacket) {
         if (requirePacket) {
-            packetSyncManager.put(messageID + "_" + client.getCommandSenderName(), 0);
+            packetSyncManager.put(messageID + "_" + client.getDisplayNameString(), 0);
             DLCore.networkManager.sendTo(new DLPacket().setID(messageID).setNBT(message), client);
         }
-        if (packetSyncManager.containsKey(messageID + "_" + client.getCommandSenderName())) {
-            packetSyncManager.put(messageID + "_" + client.getCommandSenderName(), packetSyncManager.get(messageID + "_" + client.getCommandSenderName()) + 1);
-            if (packetSyncManager.get(messageID + "_" + client.getCommandSenderName()) >= DLConfigSetup.PACKET_DELAY) {
-                packetSyncManager.put(messageID + "_" + client.getCommandSenderName(), 0);
+        if (packetSyncManager.containsKey(messageID + "_" + client.getDisplayNameString())) {
+            packetSyncManager.put(messageID + "_" + client.getDisplayNameString(), packetSyncManager.get(messageID + "_" + client.getDisplayNameString()) + 1);
+            if (packetSyncManager.get(messageID + "_" + client.getDisplayNameString()) >= DLConfigSetup.PACKET_DELAY) {
+                packetSyncManager.put(messageID + "_" + client.getDisplayNameString(), 0);
                 DLCore.networkManager.sendTo(new DLPacket().setID(messageID).setNBT(message), client);
             }
         } else {

@@ -16,4 +16,9 @@ public class HeartContainer extends Item {
         return stk;
     }
 
+    public Item setTextureName(String string) {
+        //NOOP
+        //TODO Actually do proper item rendering
+        return this;
+    }
 }

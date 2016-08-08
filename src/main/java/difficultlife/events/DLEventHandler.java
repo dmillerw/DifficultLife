@@ -1,13 +1,9 @@
 package difficultLife.events;
 
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.PlayerEvent;
-import cpw.mods.fml.common.gameevent.TickEvent;
-import cpw.mods.fml.common.gameevent.TickEvent.Phase;
-import cpw.mods.fml.relauncher.Side;
 import difficultLife.init.DLConfigSetup;
 import difficultLife.init.DLItems;
 import difficultLife.network.DataSyncManager;
+import difficultLife.utils.DLPotionHelper;
 import difficultLife.utils.DLSaveStorage;
 import difficultLife.utils.DLUtils;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -22,15 +18,21 @@ import net.minecraft.entity.monster.EntityCreeper;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.PotionTypes;
+import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.potion.Potion;
-import net.minecraft.potion.PotionEffect;
-import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.potion.PotionType;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.world.World;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import net.minecraftforge.fml.relauncher.Side;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,11 +43,11 @@ public class DLEventHandler {
     public static List<DLPotionEntry> potions = new ArrayList<DLPotionEntry>();
 
     public static void initPotions() {
-        potions.add(new DLPotionEntry(Potion.damageBoost.id, 30));
-        potions.add(new DLPotionEntry(Potion.moveSpeed.id, 10));
-        potions.add(new DLPotionEntry(Potion.fireResistance.id, 10));
-        potions.add(new DLPotionEntry(Potion.invisibility.id, 20));
-        potions.add(new DLPotionEntry(Potion.resistance.id, 30));
+        potions.add(new DLPotionEntry(PotionTypes.STRENGTH, 30));
+        potions.add(new DLPotionEntry(PotionTypes.SWIFTNESS, 10));
+        potions.add(new DLPotionEntry(PotionTypes.FIRE_RESISTANCE, 10));
+        potions.add(new DLPotionEntry(PotionTypes.INVISIBILITY, 20));
+//        potions.add(new DLPotionEntry(Potion.resistance.id, 30));
     }
 
     public static DLPotionEntry findRandPotion(Random rnd, float maxWeight) {
@@ -66,22 +68,22 @@ public class DLEventHandler {
 
     @SubscribeEvent
     public void livingDropsEvent(LivingDropsEvent event) {
-        if (!event.entityLiving.worldObj.isRemote) {
-            if (event.recentlyHit) {
-                if (event.entityLiving.worldObj.rand.nextFloat() <= DLConfigSetup.HEART_DROP_CHANCE) {
-                    event.entityLiving.dropItem(DLItems.heart, 1);
+        if (!event.getEntityLiving().worldObj.isRemote) {
+            if (event.isRecentlyHit()) {
+                if (event.getEntityLiving().worldObj.rand.nextFloat() <= DLConfigSetup.HEART_DROP_CHANCE) {
+                    event.getEntityLiving().dropItem(DLItems.heart, 1);
                 }
 
             }
 
-            if (event.entityLiving instanceof EntityWither) {
+            if (event.getEntityLiving() instanceof EntityWither) {
                 if (DLConfigSetup.GAIN_HEARTS_FROM_WITHER)
-                    event.entityLiving.dropItem(DLItems.heart, 3 + event.entityLiving.worldObj.rand.nextInt(3));
+                    event.getEntityLiving().dropItem(DLItems.heart, 3 + event.getEntityLiving().worldObj.rand.nextInt(3));
             }
 
-            if (event.entityLiving instanceof EntityDragon) {
+            if (event.getEntityLiving() instanceof EntityDragon) {
                 if (DLConfigSetup.GAIN_HEARTS_FROM_DRAGON)
-                    event.entityLiving.dropItem(DLItems.heart, 9 + event.entityLiving.worldObj.rand.nextInt(12));
+                    event.getEntityLiving().dropItem(DLItems.heart, 9 + event.getEntityLiving().worldObj.rand.nextInt(12));
             }
         }
     }
@@ -89,62 +91,60 @@ public class DLEventHandler {
     @SuppressWarnings("unchecked")
     @SubscribeEvent
     public void livingSpawnEvent(LivingEvent.LivingUpdateEvent event) {
-        if (!event.entityLiving.worldObj.isRemote && !(event.entityLiving instanceof EntityPlayer)) {
-            if (EntityList.getEntityString(event.entityLiving) != null && !EntityList.getEntityString(event.entityLiving).isEmpty() && !DLConfigSetup.PERMITTED_FROM_HP_INCREASEMENT.contains(EntityList.getEntityString(event.entityLiving)))
-                if (event.entityLiving.getAttributeMap() != null) {
-                    if (event.entityLiving.getEntityAttribute(SharedMonsterAttributes.maxHealth).getModifier(DLUtils.modifierID) == null) {
+        if (!event.getEntityLiving().worldObj.isRemote && !(event.getEntityLiving() instanceof EntityPlayer)) {
+            if (EntityList.getEntityString(event.getEntityLiving()) != null && !EntityList.getEntityString(event.getEntityLiving()).isEmpty() && !DLConfigSetup.PERMITTED_FROM_HP_INCREASEMENT.contains(EntityList.getEntityString(event.getEntityLiving())))
+                if (event.getEntityLiving().getAttributeMap() != null) {
+                    if (event.getEntityLiving().getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).getModifier(DLUtils.modifierID) == null) {
                         float difficulty = DLSaveStorage.commonGenericTag.getFloat("difficulty");
 
-                        if (!DLConfigSetup.PERMITTED_FROM_BLIGHT.contains(EntityList.getEntityString(event.entityLiving)))
-                            if (event.entityLiving.worldObj.rand.nextFloat() < DLSaveStorage.commonGenericTag.getFloat("difficulty") / DLConfigSetup.DIFFICULTY_MAX * DLConfigSetup.BLIGHT_CHANCE_MULTIPLIER) {
-                                event.entityLiving.addPotionEffect(new PotionEffect(Potion.invisibility.id, Integer.MAX_VALUE, 0, true));
-                                event.entityLiving.addPotionEffect(new PotionEffect(Potion.fireResistance.id, Integer.MAX_VALUE, 0, true));
-                                event.entityLiving.addPotionEffect(new PotionEffect(Potion.moveSpeed.id, Integer.MAX_VALUE, 8, true));
-                                event.entityLiving.addPotionEffect(new PotionEffect(Potion.damageBoost.id, Integer.MAX_VALUE, 2, true));
-                                if (event.entityLiving instanceof EntityLiving) {
-                                    EntityLiving entity = (EntityLiving) event.entityLiving;
-                                    int i = event.entity.worldObj.rand.nextInt(2);
-                                    float f = 0.5F;
+                        if (!DLConfigSetup.PERMITTED_FROM_BLIGHT.contains(EntityList.getEntityString(event.getEntityLiving())))
+                            if (event.getEntityLiving().worldObj.rand.nextFloat() < DLSaveStorage.commonGenericTag.getFloat("difficulty") / DLConfigSetup.DIFFICULTY_MAX * DLConfigSetup.BLIGHT_CHANCE_MULTIPLIER) {
+                                event.getEntityLiving().addPotionEffect(DLPotionHelper.potionEffect(PotionTypes.INVISIBILITY, Integer.MAX_VALUE, 0, true, false));
+                                event.getEntityLiving().addPotionEffect(DLPotionHelper.potionEffect(PotionTypes.FIRE_RESISTANCE, Integer.MAX_VALUE, 0, true, false));
+                                event.getEntityLiving().addPotionEffect(DLPotionHelper.potionEffect(PotionTypes.SWIFTNESS, Integer.MAX_VALUE, 0, true, false));
+                                event.getEntityLiving().addPotionEffect(DLPotionHelper.potionEffect(PotionTypes.STRENGTH, Integer.MAX_VALUE, 0, true, false));
 
-                                    if (event.entity.worldObj.rand.nextFloat() < 0.095F) {
-                                        ++i;
+                                final World world = event.getEntity().worldObj;
+                                final Random random = world.rand;
+
+                                if (event.getEntityLiving() instanceof EntityLiving) {
+                                    final EntityLiving entity = (EntityLiving) event.getEntityLiving();
+
+                                    int i = random.nextInt(2);
+
+                                    for (int k = 0; k < 3; k++) {
+                                        if (random.nextFloat() < 0.095F) {
+                                            ++i;
+                                        }
                                     }
 
-                                    if (event.entity.worldObj.rand.nextFloat() < 0.095F) {
-                                        ++i;
-                                    }
+                                    for (EntityEquipmentSlot slot : EntityEquipmentSlot.values()) {
+                                        if (slot == EntityEquipmentSlot.MAINHAND || slot == EntityEquipmentSlot.OFFHAND)
+                                            continue;
 
-                                    if (event.entity.worldObj.rand.nextFloat() < 0.095F) {
-                                        ++i;
-                                    }
-
-                                    for (int j = 3; j >= 0; --j) {
-                                        ItemStack itemstack = entity.func_130225_q(j);
-
-                                        if (j < 3 && event.entity.worldObj.rand.nextFloat() < f) {
+                                        if (random.nextFloat() < 0.5F)
                                             break;
-                                        }
 
-                                        if (itemstack == null) {
-                                            Item item = EntityLiving.getArmorItemForSlot(j + 1, i);
-
-                                            if (item != null) {
-                                                entity.setCurrentItemOrArmor(j + 1, new ItemStack(item));
-                                            }
+                                        final ItemStack itemStack = entity.getItemStackFromSlot(slot);
+                                        if (itemStack == null) {
+                                            entity.setItemStackToSlot(slot, new ItemStack(EntityLiving.getArmorByChance(slot, i)));
                                         }
                                     }
                                 }
-                                for (int i = 0; i < 5; ++i) {
-                                    ItemStack is = event.entityLiving.getEquipmentInSlot(i);
-                                    if (is != null) {
-                                        is = EnchantmentHelper.addRandomEnchantment(event.entityLiving.worldObj.rand, is, 30);
-                                    } else {
 
+                                for (EntityEquipmentSlot slot : EntityEquipmentSlot.values()) {
+                                    if (slot == EntityEquipmentSlot.MAINHAND || slot == EntityEquipmentSlot.OFFHAND)
+                                        continue;
+
+                                    ItemStack itemStack = event.getEntityLiving().getItemStackFromSlot(slot);
+                                    if (itemStack != null) {
+                                        event.getEntityLiving().setItemStackToSlot(slot, EnchantmentHelper.addRandomEnchantment(random, itemStack, 30, false));
                                     }
                                 }
-                                event.entityLiving.setFire(Integer.MAX_VALUE / 20);
-                                if (event.entityLiving instanceof EntityCreeper) {
-                                    ((EntityCreeper) event.entityLiving).onStruckByLightning(new EntityLightningBolt(event.entityLiving.worldObj, event.entityLiving.posX, event.entityLiving.posY, event.entityLiving.posZ));
+
+                                event.getEntityLiving().setFire(Integer.MAX_VALUE / 20);
+                                if (event.getEntityLiving() instanceof EntityCreeper) {
+                                    event.getEntityLiving().onStruckByLightning(new EntityLightningBolt(event.getEntityLiving().worldObj, event.getEntityLiving().posX, event.getEntityLiving().posY, event.getEntityLiving().posZ, false));
                                 }
                                 difficulty *= 3;
                             }
@@ -152,7 +152,7 @@ public class DLEventHandler {
                         float genAddedHealth = difficulty;
 
 
-                        if (event.entityLiving instanceof IMob) {
+                        if (event.getEntityLiving() instanceof IMob) {
                             genAddedHealth *= DLConfigSetup.DIFFICULTY_GENERIC_HEALTH_MULTIPLIER;
                         } else {
                             genAddedHealth *= DLConfigSetup.DIFFICULTY_PEACEFULL_HEALTH_MULTIPLIER;
@@ -161,46 +161,47 @@ public class DLEventHandler {
                         difficulty -= genAddedHealth;
 
                         if (difficulty > 0) {
-                            float randomFlt = event.entityLiving.worldObj.rand.nextFloat();
+                            float randomFlt = event.getEntityLiving().worldObj.rand.nextFloat();
                             float diffIncrease = difficulty * randomFlt;
                             difficulty -= diffIncrease;
                             genAddedHealth += diffIncrease;
                         }
-                        if (event.entityLiving.getEntityAttribute(SharedMonsterAttributes.attackDamage) != null)
+
+                        if (event.getEntityLiving().getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE) != null)
                             if (difficulty > 0) {
-                                float randomFlt = event.entityLiving.worldObj.rand.nextFloat();
+                                float randomFlt = event.getEntityLiving().worldObj.rand.nextFloat();
                                 float diffIncrease = difficulty * randomFlt;
                                 difficulty -= diffIncrease;
-                                if (event.entityLiving.getEntityAttribute(SharedMonsterAttributes.attackDamage).getModifier(DLUtils.modifierID) == null)
-                                    event.entityLiving.getEntityAttribute(SharedMonsterAttributes.attackDamage).applyModifier(new AttributeModifier(DLUtils.modifierID, "DL.damageMod", diffIncrease / 10, 0));
+                                if (event.getEntityLiving().getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getModifier(DLUtils.modifierID) == null)
+                                    event.getEntityLiving().getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).applyModifier(new AttributeModifier(DLUtils.modifierID, "DL.damageMod", diffIncrease / 10, 0));
                             }
 
                         if (difficulty > 0) {
-                            DLPotionEntry e = findRandPotion(event.entityLiving.worldObj.rand, difficulty);
+                            DLPotionEntry e = findRandPotion(event.getEntityLiving().worldObj.rand, difficulty);
                             if (e != null) {
                                 difficulty -= e.weight;
                             }
                         }
-                        if (event.entityLiving.getEntityAttribute(SharedMonsterAttributes.maxHealth).getModifier(DLUtils.modifierID) == null)
-                            event.entityLiving.getEntityAttribute(SharedMonsterAttributes.maxHealth).applyModifier(new AttributeModifier(DLUtils.modifierID, "DL.healthMod", genAddedHealth, 0));
-                        event.entityLiving.setHealth(event.entityLiving.getMaxHealth());
+                        if (event.getEntityLiving().getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).getModifier(DLUtils.modifierID) == null)
+                            event.getEntityLiving().getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).applyModifier(new AttributeModifier(DLUtils.modifierID, "DL.healthMod", genAddedHealth, 0));
+                        event.getEntityLiving().setHealth(event.getEntityLiving().getMaxHealth());
                     }
                 }
         }
-        if (!event.entityLiving.worldObj.isRemote && event.entityLiving instanceof EntityPlayer && DLConfigSetup.ENABLE_CUSTOM_HEALTH_REGEN) {
-            if (event.entityLiving.worldObj.getWorldTime() % 240 == 0 && ((EntityPlayer) event.entityLiving).getFoodStats().getFoodLevel() >= 10) {
-                event.entityLiving.heal(1);
+        if (!event.getEntityLiving().worldObj.isRemote && event.getEntityLiving() instanceof EntityPlayer && DLConfigSetup.ENABLE_CUSTOM_HEALTH_REGEN) {
+            if (event.getEntityLiving().worldObj.getWorldTime() % 240 == 0 && ((EntityPlayer) event.getEntityLiving()).getFoodStats().getFoodLevel() >= 10) {
+                event.getEntityLiving().heal(1);
             }
         }
-        if (!event.entityLiving.worldObj.isRemote && event.entityLiving instanceof EntityPlayer && event.entityLiving.ticksExisted % 20 == 0) {
-            EntityPlayer p = (EntityPlayer) event.entityLiving;
-            List<EntityPlayer> players = p.worldObj.getEntitiesWithinAABB(EntityPlayer.class, AxisAlignedBB.getBoundingBox(p.posX - 0.5D, p.posY - 0.5D, p.posZ - 0.5D, p.posX + 0.5D, p.posY + 0.5D, p.posZ + 0.5D).expand(16, 8, 16));
+        if (!event.getEntityLiving().worldObj.isRemote && event.getEntityLiving() instanceof EntityPlayer && event.getEntityLiving().ticksExisted % 20 == 0) {
+            EntityPlayer p = (EntityPlayer) event.getEntityLiving();
+            List<EntityPlayer> players = p.worldObj.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(p.posX - 0.5D, p.posY - 0.5D, p.posZ - 0.5D, p.posX + 0.5D, p.posY + 0.5D, p.posZ + 0.5D).expand(16, 8, 16));
             for (EntityPlayer pl : players) {
-                NBTTagCompound tag = DLSaveStorage.playerData.get(p.getCommandSenderName());
+                NBTTagCompound tag = DLSaveStorage.playerData.get(p.getDisplayNameString());
                 if (tag.hasKey("username")) {
                     //...
                 } else {
-                    tag.setString("username", p.getCommandSenderName());
+                    tag.setString("username", p.getDisplayNameString());
                 }
                 DataSyncManager.requestServerToClientMessage("playerData", (EntityPlayerMP) pl, tag, true);
             }
@@ -209,7 +210,7 @@ public class DLEventHandler {
 
     @SubscribeEvent
     public void onWorldTick(TickEvent.WorldTickEvent event) {
-        if (event.side == Side.SERVER && event.world != null && event.world.provider != null && event.world.provider.dimensionId == 0 && event.phase == Phase.START) {
+        if (event.side == Side.SERVER && event.world != null && event.world.provider != null && event.world.provider.getDimension() == 0 && event.phase == TickEvent.Phase.START) {
             float dIncrease = 0;
             if (event.world.getWorldTime() % 20 == 0) {
                 dIncrease = DLConfigSetup.DIFFICULTY_EACH_TICK;
@@ -227,19 +228,19 @@ public class DLEventHandler {
             EntityPlayerMP player = (EntityPlayerMP) event.player;
             float maxHealth = player.getMaxHealth();
             if (DLConfigSetup.LOOSE_HEALTH_ON_DEATH) {
-                NBTTagCompound tag = DLSaveStorage.playerData.get(player.getCommandSenderName());
+                NBTTagCompound tag = DLSaveStorage.playerData.get(player.getDisplayNameString());
                 if (tag != null && !tag.hasNoTags()) {
                     tag.setInteger("health", DLConfigSetup.PLAYER_HEARTS_GENERIC * 2);
-                    DLSaveStorage.playerData.put(player.getCommandSenderName(), tag);
-                    DataSyncManager.requestServerToClientMessage("playerData", (EntityPlayerMP) player, DLSaveStorage.playerData.get(player.getCommandSenderName()), true);
+                    DLSaveStorage.playerData.put(player.getDisplayNameString(), tag);
+                    DataSyncManager.requestServerToClientMessage("playerData", (EntityPlayerMP) player, DLSaveStorage.playerData.get(player.getDisplayNameString()), true);
                 }
             }
             float shouldHave = DLSaveStorage.getSuggestedAmmoundOfHealthForPlayer(player);
             float difference = maxHealth - shouldHave;
 
-            AttributeModifier mod = player.getEntityAttribute(SharedMonsterAttributes.maxHealth).getModifier(DLUtils.modifierID);
+            AttributeModifier mod = player.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).getModifier(DLUtils.modifierID);
             if (mod == null) {
-                player.getEntityAttribute(SharedMonsterAttributes.maxHealth).applyModifier(new AttributeModifier(DLUtils.modifierID, "DL.playerhealthDifference", -difference, 0));
+                player.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).applyModifier(new AttributeModifier(DLUtils.modifierID, "DL.playerhealthDifference", -difference, 0));
             }
             maxHealth = player.getMaxHealth();
             if (player.getHealth() > maxHealth) {
@@ -262,15 +263,15 @@ public class DLEventHandler {
     public void onPlayerJoinedServerEvent(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.player instanceof EntityPlayerMP) {
             DataSyncManager.requestServerToClientMessage("worldData", (EntityPlayerMP) event.player, DLSaveStorage.commonGenericTag, true);
-            DataSyncManager.requestServerToClientMessage("playerData", (EntityPlayerMP) event.player, DLSaveStorage.playerData.get(event.player.getCommandSenderName()), true);
+            DataSyncManager.requestServerToClientMessage("playerData", (EntityPlayerMP) event.player, DLSaveStorage.playerData.get(event.player.getDisplayNameString()), true);
             EntityPlayerMP player = (EntityPlayerMP) event.player;
             float maxHealth = player.getMaxHealth();
             float shouldHave = DLSaveStorage.getSuggestedAmmoundOfHealthForPlayer(player);
             float difference = maxHealth - shouldHave;
 
-            AttributeModifier mod = player.getEntityAttribute(SharedMonsterAttributes.maxHealth).getModifier(DLUtils.modifierID);
+            AttributeModifier mod = player.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).getModifier(DLUtils.modifierID);
             if (mod == null) {
-                player.getEntityAttribute(SharedMonsterAttributes.maxHealth).applyModifier(new AttributeModifier(DLUtils.modifierID, "DL.playerhealthDifference", -difference, 0));
+                player.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).applyModifier(new AttributeModifier(DLUtils.modifierID, "DL.playerhealthDifference", -difference, 0));
             }
             maxHealth = player.getMaxHealth();
             if (player.getHealth() > maxHealth) {
@@ -290,12 +291,12 @@ public class DLEventHandler {
     }
 
     public static class DLPotionEntry {
+        PotionType potion;
         float weight;
-        int potionID;
 
-        public DLPotionEntry(float f, int i) {
-            weight = f;
-            potionID = i;
+        public DLPotionEntry(PotionType potion, float weight) {
+            this.potion = potion;
+            this.weight = weight;
         }
     }
 

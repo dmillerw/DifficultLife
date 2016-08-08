@@ -1,7 +1,5 @@
 package difficultLife.client;
 
-import cpw.mods.fml.common.FMLLog;
-import cpw.mods.fml.common.Loader;
 import difficultLife.DLCore;
 import difficultLife.DLServer;
 import difficultLife.init.DLConfigSetup;
@@ -9,6 +7,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.FMLLog;
+import net.minecraftforge.fml.common.Loader;
 
 public class DLClient extends DLServer {
 

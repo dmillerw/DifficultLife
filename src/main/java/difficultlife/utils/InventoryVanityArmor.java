@@ -7,6 +7,9 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.text.ITextComponent;
+
+import javax.annotation.Nullable;
 
 public class InventoryVanityArmor implements IInventory {
 
@@ -72,19 +75,25 @@ public class InventoryVanityArmor implements IInventory {
         }
     }
 
+    @Nullable
     @Override
-    public ItemStack getStackInSlotOnClosing(int i) {
-        if (this.armorItems[i] != null) {
-            ItemStack itemstack = this.armorItems[i];
-            this.armorItems[i] = null;
-            this.markDirty();
-            return itemstack;
-        } else {
-            this.markDirty();
-            return null;
-        }
-
+    public ItemStack removeStackFromSlot(int index) {
+        return null;
     }
+
+//    @Override
+//    public ItemStack getStackInSlotOnClosing(int i) {
+//        if (this.armorItems[i] != null) {
+//            ItemStack itemstack = this.armorItems[i];
+//            this.armorItems[i] = null;
+//            this.markDirty();
+//            return itemstack;
+//        } else {
+//            this.markDirty();
+//            return null;
+//        }
+//
+//    }
 
     @Override
     public void setInventorySlotContents(int i, ItemStack itemstack) {
@@ -93,18 +102,6 @@ public class InventoryVanityArmor implements IInventory {
             itemstack.stackSize = this.getInventoryStackLimit();
         }
         this.markDirty();
-    }
-
-    @Override
-    public String getInventoryName() {
-        // TODO Auto-generated method stub
-        return "Vanity Armor";
-    }
-
-    @Override
-    public boolean hasCustomInventoryName() {
-        // TODO Auto-generated method stub
-        return false;
     }
 
     @Override
@@ -117,7 +114,7 @@ public class InventoryVanityArmor implements IInventory {
     public void markDirty() {
         if (!this.owner.worldObj.isRemote) {
             //this.writeToNBT(DLSaveStorage.playerData.get(this.owner));
-            DataSyncManager.requestServerToClientMessage("playerData", (EntityPlayerMP) owner, DLSaveStorage.playerData.get(owner.getCommandSenderName()), true);
+            DataSyncManager.requestServerToClientMessage("playerData", (EntityPlayerMP) owner, DLSaveStorage.playerData.get(owner.getDisplayNameString()), true);
         }
     }
 
@@ -127,13 +124,13 @@ public class InventoryVanityArmor implements IInventory {
     }
 
     @Override
-    public void openInventory() {
-        this.markDirty();
+    public void openInventory(EntityPlayer player) {
+
     }
 
     @Override
-    public void closeInventory() {
-        this.markDirty();
+    public void closeInventory(EntityPlayer player) {
+
     }
 
     @Override
@@ -141,4 +138,38 @@ public class InventoryVanityArmor implements IInventory {
         return p_94041_2_ != null && p_94041_2_.getItem() != null && p_94041_2_.getItem() instanceof ItemArmor;
     }
 
+    @Override
+    public int getField(int id) {
+        return 0;
+    }
+
+    @Override
+    public void setField(int id, int value) {
+
+    }
+
+    @Override
+    public int getFieldCount() {
+        return 0;
+    }
+
+    @Override
+    public void clear() {
+
+    }
+
+    @Override
+    public String getName() {
+        return null;
+    }
+
+    @Override
+    public boolean hasCustomName() {
+        return false;
+    }
+
+    @Override
+    public ITextComponent getDisplayName() {
+        return null;
+    }
 }

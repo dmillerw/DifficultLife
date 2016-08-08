@@ -1,5 +1,6 @@
 package difficultLife.client;
 
+import difficultLife.utils.DLPotionHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
@@ -10,8 +11,7 @@ import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.IAttributeInstance;
 import net.minecraft.init.MobEffects;
 import net.minecraft.init.PotionTypes;
-import net.minecraft.potion.Potion;
-import net.minecraft.potion.PotionEffect;
+import net.minecraft.potion.*;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.client.GuiIngameForge;
@@ -91,7 +91,7 @@ public class ClientHeartDisplayManager {
                 yBasePos += 7;
             }
             int regen = -1;
-            if (mc.thePlayer.isPotionActive(Potion.REGISTRY.getObject(PotionTypes.REGENERATION.getRegistryName()))) {
+            if (mc.thePlayer.isPotionActive(DLPotionHelper.getPotionFromType(PotionTypes.REGENERATION))) {
                 regen = updateCounter % 25;
             }
 
@@ -99,7 +99,7 @@ public class ClientHeartDisplayManager {
             final int TOP = 9 * (mc.theWorld.getWorldInfo().isHardcoreModeEnabled() ? 5 : 0);
             final int BACKGROUND = (highlight ? 25 : 16);
             int MARGIN = 16;
-            if (mc.thePlayer.isPotionActive(Potion.REGISTRY.getObject(PotionTypes.POISON.getRegistryName())))
+            if (mc.thePlayer.isPotionActive(DLPotionHelper.getPotionFromType(PotionTypes.POISON)))
                 MARGIN += 36;
             else if (mc.thePlayer.isPotionActive(MobEffects.WITHER))
                 MARGIN += 72;
@@ -143,7 +143,7 @@ public class ClientHeartDisplayManager {
             PotionEffect potion = mc.thePlayer.getActivePotionEffect(MobEffects.WITHER);
             if (potion != null)
                 potionOffset = 18;
-            potion = mc.thePlayer.getActivePotionEffect(Potion.REGISTRY.getObject(PotionTypes.POISON.getRegistryName()));
+            potion = mc.thePlayer.getActivePotionEffect(DLPotionHelper.getPotionFromType(PotionTypes.POISON));
             if (potion != null)
                 potionOffset = 9;
             if (mc.theWorld.getWorldInfo().isHardcoreModeEnabled())

@@ -1,12 +1,12 @@
 package difficultLife.network;
 
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
-import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import difficultLife.DLCore;
 import difficultLife.utils.DLSaveStorage;
 import difficultLife.utils.DLUtils;
 import io.netty.channel.ChannelHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 @ChannelHandler.Sharable
 public class DLPacketHandler implements IMessageHandler<DLPacket, IMessage> {
@@ -18,7 +18,7 @@ public class DLPacketHandler implements IMessageHandler<DLPacket, IMessage> {
         }
         if (message.id.equalsIgnoreCase("playerData")) {
             String tagName = message.syncedTag.getString("username");
-            String username = DLCore.proxy.getClientPlayer().getCommandSenderName();
+            String username = DLCore.proxy.getClientPlayer().getDisplayNameString();
             if (username.equalsIgnoreCase(tagName))
                 DLSaveStorage.clientPlayerData = message.syncedTag;
             else

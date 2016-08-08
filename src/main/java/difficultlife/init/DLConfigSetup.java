@@ -1,8 +1,8 @@
 package difficultLife.init;
 
-import cpw.mods.fml.common.FMLLog;
 import difficultLife.DLCore;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.fml.common.FMLLog;
 import org.apache.logging.log4j.Level;
 
 import java.util.ArrayList;

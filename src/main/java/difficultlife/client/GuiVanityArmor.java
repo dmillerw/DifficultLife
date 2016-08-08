@@ -1,19 +1,19 @@
 package difficultLife.client;
 
-import cpw.mods.fml.common.Loader;
 import difficultLife.utils.ContainerVanityArmor;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.achievement.GuiAchievements;
 import net.minecraft.client.gui.achievement.GuiStats;
 import net.minecraft.client.renderer.InventoryEffectRenderer;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fml.common.Loader;
 import org.lwjgl.opengl.GL11;
 
 import java.lang.reflect.Field;
@@ -49,9 +49,9 @@ public class GuiVanityArmor extends InventoryEffectRenderer {
         playerdrawn.rotationPitch = -(float) Math.atan(pitch / 40F) * 20F;
         playerdrawn.rotationYawHead = playerdrawn.rotationYaw;
         playerdrawn.prevRotationYawHead = playerdrawn.rotationYaw;
-        GL11.glTranslatef(0.0F, playerdrawn.yOffset, 0.0F);
-        RenderManager.instance.playerViewY = 180F;
-        RenderManager.instance.renderEntityWithPosYaw(playerdrawn, 0.0D, 0.0D, 0.0D, 0.0F, 1.0F);
+        GL11.glTranslated(0.0D, playerdrawn.getYOffset(), 0.0D);
+        Minecraft.getMinecraft().getRenderManager().playerViewY = 180F;
+        Minecraft.getMinecraft().getRenderManager().doRenderEntity(playerdrawn, 0.0D, 0.0D, 0.0D, 0.0F, 1.0F, true);
         playerdrawn.renderYawOffset = f2;
         playerdrawn.rotationYaw = f3;
         playerdrawn.rotationPitch = f4;
@@ -111,10 +111,6 @@ public class GuiVanityArmor extends InventoryEffectRenderer {
             mc.displayGuiScreen(new GuiAchievements(this, mc.thePlayer.getStatFileWriter()));
         if (button.id == 1)
             mc.displayGuiScreen(new GuiStats(this, mc.thePlayer.getStatFileWriter()));
-    }
-
-    protected void keyTyped(char par1, int par2) {
-        super.keyTyped(par1, par2);
     }
 
 }

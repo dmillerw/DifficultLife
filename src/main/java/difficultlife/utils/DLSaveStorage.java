@@ -1,8 +1,5 @@
 package difficultLife.utils;
 
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.FMLLog;
-import cpw.mods.fml.relauncher.Side;
 import difficultLife.DLCore;
 import difficultLife.init.DLConfigSetup;
 import difficultLife.network.DataSyncManager;
@@ -17,6 +14,9 @@ import net.minecraft.world.World;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.world.WorldEvent.Load;
 import net.minecraftforge.event.world.WorldEvent.Save;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.FMLLog;
+import net.minecraftforge.fml.relauncher.Side;
 import org.apache.logging.log4j.Level;
 
 import java.io.File;
@@ -36,8 +36,8 @@ public class DLSaveStorage {
             commonGenericTag = new NBTTagCompound();
             commonGenericTag.setFloat("difficulty", DLConfigSetup.DIFFICULTY_DEFAULT);
             if (FMLCommonHandler.instance().getEffectiveSide() == Side.SERVER) {
-                for (int i = 0; i < MinecraftServer.getServer().getCurrentPlayerCount(); ++i) {
-                    EntityPlayerMP player = MinecraftServer.getServer().getConfigurationManager().func_152612_a(MinecraftServer.getServer().getConfigurationManager().getAllUsernames()[i]);
+                final MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+                for (EntityPlayerMP player : server.getPlayerList().getPlayerList()) {
                     if (player != null) {
                         DataSyncManager.requestServerToClientMessage("worldData", player, commonGenericTag, true);
                     }
@@ -50,10 +50,12 @@ public class DLSaveStorage {
         }
         commonGenericTag.setFloat("difficulty", difficulty);
         if (FMLCommonHandler.instance().getEffectiveSide() == Side.SERVER) {
-            for (int i = 0; i < MinecraftServer.getServer().getCurrentPlayerCount(); ++i) {
-                EntityPlayerMP player = MinecraftServer.getServer().getConfigurationManager().func_152612_a(MinecraftServer.getServer().getConfigurationManager().getAllUsernames()[i]);
-                if (player != null) {
-                    DataSyncManager.requestServerToClientMessage("worldData", player, commonGenericTag, false);
+            final MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+            for (int i = 0; i < server.getCurrentPlayerCount(); ++i) {
+                for (EntityPlayerMP player : server.getPlayerList().getPlayerList()) {
+                    if (player != null) {
+                        DataSyncManager.requestServerToClientMessage("worldData", player, commonGenericTag, false);
+                    }
                 }
             }
         }
@@ -61,25 +63,25 @@ public class DLSaveStorage {
 
     public static void increasePlayerHeartsBy1(EntityPlayer p) {
         if (p instanceof EntityPlayerMP) {
-            NBTTagCompound tag = playerData.get(p.getCommandSenderName());
+            NBTTagCompound tag = playerData.get(p.getDisplayNameString());
             if (tag == null || tag.hasNoTags()) {
                 tag = new NBTTagCompound();
                 tag.setInteger("health", DLConfigSetup.PLAYER_HEARTS_GENERIC * 2);
-                playerData.put(p.getCommandSenderName(), tag);
-                DataSyncManager.requestServerToClientMessage("playerData", (EntityPlayerMP) p, DLSaveStorage.playerData.get(p.getCommandSenderName()), true);
+                playerData.put(p.getDisplayNameString(), tag);
+                DataSyncManager.requestServerToClientMessage("playerData", (EntityPlayerMP) p, DLSaveStorage.playerData.get(p.getDisplayNameString()), true);
             }
             int hp = tag.getInteger("health");
             if (hp + 2 < DLConfigSetup.MAX_ADDITIONAL_HEARTS && DLConfigSetup.MAX_ADDITIONAL_HEARTS != -1)
                 return;
 
             tag.setInteger("health", tag.getInteger("health") + 2);
-            AttributeModifier mod = p.getEntityAttribute(SharedMonsterAttributes.maxHealth).getModifier(DLUtils.modifierID);
+            AttributeModifier mod = p.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).getModifier(DLUtils.modifierID);
             if (mod != null) {
                 AttributeModifier mCopy = new AttributeModifier(mod.getID(), mod.getName(), mod.getAmount() + 2, mod.getOperation());
-                p.getEntityAttribute(SharedMonsterAttributes.maxHealth).removeModifier(mod);
-                p.getEntityAttribute(SharedMonsterAttributes.maxHealth).applyModifier(mCopy);
+                p.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).removeModifier(mod);
+                p.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).applyModifier(mCopy);
             }
-            DataSyncManager.requestServerToClientMessage("playerData", (EntityPlayerMP) p, DLSaveStorage.playerData.get(p.getCommandSenderName()), true);
+            DataSyncManager.requestServerToClientMessage("playerData", (EntityPlayerMP) p, DLSaveStorage.playerData.get(p.getDisplayNameString()), true);
         } else {
             FMLLog.warning("[DifficultLife]Attempts to call playerhealth on CLIENT side is not cool. Canceled.", DLCore.nObj());
         }
@@ -87,12 +89,12 @@ public class DLSaveStorage {
 
     public static int getSuggestedAmmoundOfHealthForPlayer(EntityPlayer p) {
         if (p instanceof EntityPlayerMP) {
-            NBTTagCompound tag = playerData.get(p.getCommandSenderName());
+            NBTTagCompound tag = playerData.get(p.getDisplayNameString());
             if (tag == null || tag.hasNoTags()) {
                 tag = new NBTTagCompound();
                 tag.setInteger("health", DLConfigSetup.PLAYER_HEARTS_GENERIC * 2);
-                playerData.put(p.getCommandSenderName(), tag);
-                DataSyncManager.requestServerToClientMessage("playerData", (EntityPlayerMP) p, DLSaveStorage.playerData.get(p.getCommandSenderName()), true);
+                playerData.put(p.getDisplayNameString(), tag);
+                DataSyncManager.requestServerToClientMessage("playerData", (EntityPlayerMP) p, DLSaveStorage.playerData.get(p.getDisplayNameString()), true);
             }
             return tag.getInteger("health");
         } else {
@@ -103,14 +105,14 @@ public class DLSaveStorage {
 
     public static boolean generatePlayerSaveFile(PlayerEvent.LoadFromFile event) {
         try {
-            EntityPlayer p = event.entityPlayer; //Player reference for easier coding
+            EntityPlayer p = event.getEntityPlayer(); //Player reference for easier coding
             if (p != null && !p.worldObj.isRemote) //If we are working on a SERVER
             {
                 FMLLog.info("[DifficultLife]Beginning loading of the file for player %s on side %s", DLCore.nObj(p, FMLCommonHandler.instance().getEffectiveSide()));
-                File f = event.playerDirectory;
+                File f = event.getPlayerDirectory();
                 if (f != null) {
                     String fPath = f.getAbsolutePath();
-                    File worldSaveFile = new File(fPath + "//DifficultLifeData_" + p.getCommandSenderName() + ".dat");
+                    File worldSaveFile = new File(fPath + "//DifficultLifeData_" + p.getDisplayNameString() + ".dat");
                     if (worldSaveFile.isDirectory()) {
                         throw new IOException("File is a directory! Please, delete the DifficultLifeData folder in your save and launch the game again!");
                     }
@@ -120,10 +122,10 @@ public class DLSaveStorage {
                     }
                     FileInputStream iStream = new FileInputStream(worldSaveFile);
                     try {
-                        playerData.put(p.getCommandSenderName(), CompressedStreamTools.readCompressed(iStream));
+                        playerData.put(p.getDisplayNameString(), CompressedStreamTools.readCompressed(iStream));
                     } catch (IOException e) {
                         FMLLog.log(Level.WARN, "[DifficultLife]	*Unable to read NBT from server save file. This is completely normal if this is your first launch of the game. Otherwise please, report this to the author!", DLCore.nObj());
-                        playerData.put(p.getCommandSenderName(), new NBTTagCompound());
+                        playerData.put(p.getDisplayNameString(), new NBTTagCompound());
                     } finally {
                         iStream.close();
                     }
@@ -140,14 +142,14 @@ public class DLSaveStorage {
 
     public static boolean saveServerPlayerFile(PlayerEvent.SaveToFile event) {
         try {
-            EntityPlayer p = event.entityPlayer; //Player reference for easier coding
+            EntityPlayer p = event.getEntityPlayer(); //Player reference for easier coding
             if (p != null && !p.worldObj.isRemote) //If we are working on a SERVER
             {
                 FMLLog.info("[DifficultLife]Beginning saving of the file for player %s on side %s", DLCore.nObj(p, FMLCommonHandler.instance().getEffectiveSide()));
-                File f = event.playerDirectory;
+                File f = event.getPlayerDirectory();
                 if (f != null) {
                     String fPath = f.getAbsolutePath();
-                    File worldSaveFile = new File(fPath + "//DifficultLifeData_" + p.getCommandSenderName() + ".dat");
+                    File worldSaveFile = new File(fPath + "//DifficultLifeData_" + p.getDisplayNameString() + ".dat");
                     if (worldSaveFile.isDirectory()) {
                         throw new IOException("File is a directory! Please, delete the DifficultLifeData folder in your save and launch the game again!");
                     }
@@ -156,7 +158,7 @@ public class DLSaveStorage {
                     }
                     FileOutputStream oStream = new FileOutputStream(worldSaveFile);
                     try {
-                        CompressedStreamTools.writeCompressed(playerData.get(p.getCommandSenderName()), oStream);
+                        CompressedStreamTools.writeCompressed(playerData.get(p.getDisplayNameString()), oStream);
                     } catch (IOException e) {
                         throw new IOException("Unable to write NBT to server save file! Please, delete the DifficultLifeData.dat in your save folder and restart the server!");
                     } catch (NullPointerException e) {
@@ -177,11 +179,11 @@ public class DLSaveStorage {
 
     public static boolean generateServerWorldFile(Load event) {
         try {
-            World w = event.world; //World reference for easier coding
-            if (w != null && !w.isRemote && w.provider != null && w.provider.dimensionId == 0) //If we are working on a SERVER and with the OVERWORLD.
+            World w = event.getWorld(); //World reference for easier coding
+            if (w != null && !w.isRemote && w.provider != null && w.provider.getDimension() == 0) //If we are working on a SERVER and with the OVERWORLD.
             {
                 FMLLog.info("[DifficultLife]Beginning loading of the file for world %s on side %s", DLCore.nObj(w, FMLCommonHandler.instance().getEffectiveSide()));
-                File f = event.world.getSaveHandler().getWorldDirectory();
+                File f = event.getWorld().getSaveHandler().getWorldDirectory();
                 if (f != null) {
                     String fPath = f.getAbsolutePath();
                     File worldSaveFile = new File(fPath + "//DifficultLifeData.dat");
@@ -214,10 +216,10 @@ public class DLSaveStorage {
 
     public static boolean saveServerWorldFile(Save event) {
         try {
-            World w = event.world;
-            if (w != null && !w.isRemote && w.provider != null && w.provider.dimensionId == 0) {
+            World w = event.getWorld();
+            if (w != null && !w.isRemote && w.provider != null && w.provider.getDimension() == 0) {
                 FMLLog.info("[DifficultLife]Beginning saving of the file for world %s on side %s", DLCore.nObj(w, FMLCommonHandler.instance().getEffectiveSide()));
-                File f = event.world.getSaveHandler().getWorldDirectory();
+                File f = event.getWorld().getSaveHandler().getWorldDirectory();
                 if (f != null) {
                     String fPath = f.getAbsolutePath();
                     File worldSaveFile = new File(fPath + "//DifficultLifeData.dat");

@@ -1,16 +1,11 @@
 package difficultLife.utils;
 
-import baubles.api.BaubleType;
-import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.*;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
-import net.minecraft.util.IIcon;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -39,46 +34,40 @@ public class ContainerVanityArmor extends Container {
 
         }
 
-        for (int i = 0; i < 4; i++) {
-            final int k = i;
-            addSlotToContainer(new Slot(playerInv, playerInv.getSizeInventory() - 1 - i, 8, 8 + i * 18) {
+        for (EntityEquipmentSlot slot : EntityEquipmentSlot.values()) {
+            if (slot == EntityEquipmentSlot.MAINHAND || slot == EntityEquipmentSlot.OFFHAND)
+                continue;
+
+            addSlotToContainer(new Slot(playerInv, playerInv.getSizeInventory() - 1 - slot.getIndex(), 8, 8 + slot.getIndex() * 18) {
                 public int getSlotStackLimit() {
                     return 1;
                 }
 
                 public boolean isItemValid(ItemStack p_75214_1_) {
                     if (p_75214_1_ == null) return false;
-                    return p_75214_1_.getItem().isValidArmor(p_75214_1_, k, thePlayer);
-                }
-
-                @SideOnly(Side.CLIENT)
-                public IIcon getBackgroundIconIndex() {
-                    return ItemArmor.func_94602_b(k);
+                    return p_75214_1_.getItem().isValidArmor(p_75214_1_, slot, thePlayer);
                 }
             });
         }
 
-        for (int i = 0; i < 4; i++) {
-            final int k = i;
-            addSlotToContainer(new Slot(vanityArmor, i, 26, 8 + i * 18) {
+        for (EntityEquipmentSlot slot : EntityEquipmentSlot.values()) {
+            if (slot == EntityEquipmentSlot.MAINHAND || slot == EntityEquipmentSlot.OFFHAND)
+                continue;
+
+            addSlotToContainer(new Slot(vanityArmor, slot.getIndex(), 26, 8 + slot.getIndex() * 18) {
                 public int getSlotStackLimit() {
                     return 1;
                 }
 
                 public boolean isItemValid(ItemStack p_75214_1_) {
                     if (p_75214_1_ == null) return false;
-                    return p_75214_1_.getItem().isValidArmor(p_75214_1_, k, thePlayer);
-                }
-
-                @SideOnly(Side.CLIENT)
-                public IIcon getBackgroundIconIndex() {
-                    return ItemArmor.func_94602_b(k);
+                    return p_75214_1_.getItem().isValidArmor(p_75214_1_, slot, thePlayer);
                 }
             });
         }
 
         //TODO Baubles integration
-        try {
+        /*try {
             if (Loader.isModLoaded("Baubles")) {
                 Class<?> SlotBauble = Class.forName("baubles.common.container.SlotBauble");
                 Constructor<?> sbc = SlotBauble.getConstructor(IInventory.class, BaubleType.class, int.class, int.class, int.class);
@@ -98,7 +87,7 @@ public class ContainerVanityArmor extends Container {
             }
         } catch (Exception e) {
             //Silently catching error, probably a class misnaming
-        }
+        }*/
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 9; j++)
@@ -115,7 +104,7 @@ public class ContainerVanityArmor extends Container {
     public IInventory tryLoadStackFromPlayer(EntityPlayer player) {
         InventoryVanityArmor iva = new InventoryVanityArmor(player);
         if (!player.worldObj.isRemote)
-            iva.readFromNBT(DLSaveStorage.playerData.get(player.getCommandSenderName()));
+            iva.readFromNBT(DLSaveStorage.playerData.get(player.getDisplayNameString()));
         else
             iva.readFromNBT(DLSaveStorage.clientPlayerData);
         return iva;
@@ -128,19 +117,19 @@ public class ContainerVanityArmor extends Container {
     public void onContainerClosed(EntityPlayer player) {
         super.onContainerClosed(player);
         if (!player.worldObj.isRemote)
-            ((InventoryVanityArmor) this.vanityArmor).writeToNBT(DLSaveStorage.playerData.get(player.getCommandSenderName()));
+            ((InventoryVanityArmor) this.vanityArmor).writeToNBT(DLSaveStorage.playerData.get(player.getDisplayNameString()));
         else
             ((InventoryVanityArmor) this.vanityArmor).writeToNBT(DLSaveStorage.clientPlayerData);
 
         for (int i = 0; i < 4; i++) {
-            ItemStack itemstack = craftMatrix.getStackInSlotOnClosing(i);
+            ItemStack itemstack = craftMatrix.getStackInSlot(i);
             if (itemstack != null)
-                player.dropPlayerItemWithRandomChoice(itemstack, false);
+                player.dropItem(itemstack, false);
         }
 
         craftResult.setInventorySlotContents(0, (ItemStack) null);
         if (!player.worldObj.isRemote) {
-            if (Loader.isModLoaded("Baubles")) {
+            /*if (Loader.isModLoaded("Baubles")) {
                 try {
                     Class<?> PlayerHandler = Class.forName("baubles.common.lib.PlayerHandler");
                     Class<?> InventoryBaubles = Class.forName("baubles.common.container.InventoryBaubles");
@@ -149,7 +138,7 @@ public class ContainerVanityArmor extends Container {
                 } catch (Exception e) {
                     //Silently catching error, probably a class misnaming
                 }
-            }
+            }*/
         }
     }
 
@@ -158,7 +147,7 @@ public class ContainerVanityArmor extends Container {
     }
 
     public void putStacksInSlots(ItemStack p_75131_1_[]) {
-        if (Loader.isModLoaded("Baubles")) {
+        /*if (Loader.isModLoaded("Baubles")) {
             try {
                 Class<?> InventoryBaubles = Class.forName("baubles.common.container.InventoryBaubles");
                 Field blockEvents = InventoryBaubles.getField("blockEvents");
@@ -166,7 +155,7 @@ public class ContainerVanityArmor extends Container {
             } catch (Exception e) {
                 //
             }
-        }
+        }*/
         super.putStacksInSlots(p_75131_1_);
     }
 
@@ -224,9 +213,10 @@ public class ContainerVanityArmor extends Container {
         return flag1;
     }
 
-    public boolean func_94530_a(ItemStack par1ItemStack, Slot par2Slot) {
-        return par2Slot.inventory != craftResult && super.func_94530_a(par1ItemStack, par2Slot);
-    }
+//    @Override
+//    public boolean func_94530_a(ItemStack par1ItemStack, Slot par2Slot) {
+//        return par2Slot.inventory != craftResult && super.func_94530_a(par1ItemStack, par2Slot);
+//    }
 
     @Override
     public boolean canInteractWith(EntityPlayer p_75145_1_) {
